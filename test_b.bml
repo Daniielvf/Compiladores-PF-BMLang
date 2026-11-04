@@ -1,0 +1,10 @@
+MAIN{
+    DEC $a,$b,$c,$resultado;
+
+    $a=>5+3;
+    $b=>10*2;
+    $c=>2:3;
+    $resultado=>$a+$b*$c;
+
+    WRITE $resultado;
+}

@@ -1,0 +1,4 @@
+analizador
+analizador.tab.c
+analizador.tab.h
+lex.yy.c
