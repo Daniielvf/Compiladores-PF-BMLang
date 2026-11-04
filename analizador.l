@@ -1,4 +1,5 @@
 %{
+#include <string.h>
 #include "analizador.tab.h"
 %}
 
@@ -13,7 +14,7 @@
 "WHILE"                 { return WHILE; }
 "FOR"                   { return FOR; }
 
-"#!"([^!\n]|"!"[^#\n])*"!#"    ;  
+"#!"([^!\n]|"!"[^#\n])*"!#"    ;
 
 "+"                     { return SUMA; }
 "-"                     { return RESTA; }
@@ -41,8 +42,8 @@
 ";"                     { return PUNTOYCOMA; }
 ","                     { return COMA; }
 
-\$[a-zA-Z][a-zA-Z0-9]*  { return VARIABLE; }
-[0-9]+                  { return NUMERO; }
+\$[a-zA-Z][a-zA-Z0-9]*  { strcpy(yylval.cadena,yytext); return VARIABLE; }
+[0-9]+                  { strcpy(yylval.cadena,yytext); return NUMERO; }
 
 \n                      { yylineno++; }
 [ \t]+                  ;

@@ -1,16 +1,23 @@
 // definiciones o declaraciones
 %{
 #include <stdio.h>
+#include <string.h>
 
 void yyerror(char *mensaje);
 int yylex();
+void nuevaTemp(char *temporal);
+
 extern int yylineno;
 extern char *yytext;
 %}
 
+%union{
+    char cadena[50];
+}
+
 // Tokens
 %token MAIN DEC READ WRITE IF ELSE WHILE FOR
-%token VARIABLE NUMERO
+%token <cadena> VARIABLE NUMERO
 %token SUMA RESTA MULTIPLICACION DIVISION POTENCIA
 %token PAR_IZQ PAR_DER
 %token LLAVE_IZQ LLAVE_DER
@@ -18,6 +25,8 @@ extern char *yytext;
 %token ASIGNACION1
 %token MENOR MAYOR MAYOR_IGUAL MENOR_IGUAL IGUAL DIFERENTE
 %token AND OR
+
+%type <cadena> expresion termino potencia factor
 
 %%
 
@@ -65,6 +74,9 @@ mas_variables:
 
 asignacion:
     VARIABLE operador_asignacion expresion
+    {
+        printf("%s=%s\n", $1, $3);
+    }
     ;
 
 operador_asignacion:
@@ -83,27 +95,72 @@ escritura:
 
 expresion:
     expresion SUMA termino
+    {
+        nuevaTemp($$);
+        printf("%s=%s+%s\n", $$, $1, $3);
+    }
     | expresion RESTA termino
+    {
+        nuevaTemp($$);
+        printf("%s=%s-%s\n", $$, $1, $3);
+    }
     | termino
+    {
+        strcpy($$, $1);
+    }
     ;
 
 termino:
     termino MULTIPLICACION potencia
+    {
+        nuevaTemp($$);
+        printf("%s=%s*%s\n", $$, $1, $3);
+    }
     | termino DIVISION potencia
+    {
+        nuevaTemp($$);
+        printf("%s=%s/%s\n", $$, $1, $3);
+    }
     | potencia
+    {
+        strcpy($$, $1);
+    }
     ;
 
 potencia:
     factor POTENCIA potencia
+    {
+        nuevaTemp($$);
+        printf("%s=%s:%s\n", $$, $1, $3);
+    }
     | factor
+    {
+        strcpy($$, $1);
+    }
     ;
 
 factor:
     PAR_IZQ expresion PAR_DER
+    {
+        strcpy($$, $2);
+    }
     | VARIABLE
+    {
+        strcpy($$, $1);
+    }
     | NUMERO
+    {
+        strcpy($$, $1);
+    }
     | SUMA factor
+    {
+        strcpy($$, $2);
+    }
     | RESTA factor
+    {
+        nuevaTemp($$);
+        printf("%s=0-%s\n", $$, $2);
+    }
     ;
 
 // condicionales
@@ -168,6 +225,11 @@ operador_relacional:
 %%
 
 // funciones
+
+void nuevaTemp(char *temporal){
+    static int actual=1;
+    sprintf(temporal,"t%d",actual++);
+}
 
 void yyerror(char *mensaje)
 {
