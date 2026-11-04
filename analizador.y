@@ -85,10 +85,18 @@ operador_asignacion:
 
 lectura:
     READ VARIABLE
+    {
+        printf("call input;\n");
+        printf("pop %s;\n", $2);
+    }
     ;
 
 escritura:
     WRITE VARIABLE
+    {
+        printf("push %s;\n", $2);
+        printf("call output;\n");
+    }
     ;
 
 // operaciones matematicas

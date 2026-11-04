@@ -1,0 +1,10 @@
+MAIN{
+    DEC $a,$b,$resultado;
+
+    READ $a;
+    READ $b;
+
+    $resultado=>$a+$b*2;
+
+    WRITE $resultado;
+}
