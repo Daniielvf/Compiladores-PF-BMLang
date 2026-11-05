@@ -1,0 +1,10 @@
+MAIN{
+    DEC $a,$b,$suma;
+
+    READ $a;
+    READ $b;
+
+    $suma=>$a+$b;
+
+    WRITE $suma;
+}

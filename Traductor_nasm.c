@@ -77,7 +77,10 @@ int main(){
     char *simbolo;
     char salto[8];
     int i, errores = 0, numeroComparacion = 1;
+    int numeroLogico = 1, numeroPotencia = 1;
     int tamOperador;
+    int escriturasPendientes = 0;
+    int lecturasPendientes = 0;
     char operador;
 
     entrada = fopen("codigo_intermedio.txt", "r");
@@ -104,6 +107,9 @@ int main(){
         fprintf(salida, "    %s resd 1\n", variables[i]);
     }
 
+    fprintf(salida, "    buffer resb 16\n");
+    fprintf(salida, "    entrada_char resb 1\n");
+
     fprintf(salida, "\nsection .text\n");
     fprintf(salida, "    global _start\n\n");
     fprintf(salida, "_start:\n");
@@ -113,6 +119,57 @@ int main(){
         if(strncmp(linea, "main:", 5) == 0 ||
            strncmp(linea, "Analisis sintactico correcto", 28) == 0 ||
            linea[0] == '\n'){
+            continue;
+        }
+
+        // READ: el codigo intermedio genera call input; y pop $a;
+        if(strncmp(linea, "call input;", 11) == 0){
+            fprintf(salida, "    call leer\n");
+            fprintf(salida, "    push eax\n");
+            lecturasPendientes++;
+            continue;
+        }
+
+        if(strncmp(linea, "pop ", 4) == 0){
+            if(lecturasPendientes > 0 &&
+               sscanf(linea, "pop %49[^;];", valor) == 1){
+                fprintf(salida, "    pop eax\n");
+                fprintf(salida, "    mov [%s], eax\n",
+                        valor[0] == '$' ? valor + 1 : valor);
+                lecturasPendientes--;
+            }
+            else{
+                printf("READ incompleto: %s", linea);
+                errores++;
+            }
+            continue;
+        }
+
+        // WRITE: el codigo intermedio genera push $a; y call output;
+        if(strncmp(linea, "push ", 5) == 0){
+            if(sscanf(linea, "push %49[^;];", valor) == 1){
+                operando(op1, valor);
+                fprintf(salida, "    mov eax, %s\n", op1);
+                fprintf(salida, "    push eax\n");
+                escriturasPendientes++;
+            }
+            else{
+                printf("Instruccion no soportada: %s", linea);
+                errores++;
+            }
+            continue;
+        }
+
+        if(strncmp(linea, "call output;", 12) == 0){
+            if(escriturasPendientes > 0){
+                fprintf(salida, "    pop eax\n");
+                fprintf(salida, "    call imprimir\n");
+                escriturasPendientes--;
+            }
+            else{
+                printf("WRITE sin push anterior: %s", linea);
+                errores++;
+            }
             continue;
         }
 
@@ -203,12 +260,79 @@ int main(){
             continue;
         }
 
-        // No traducir operaciones pendientes como &&, || y potencia
-        if(strstr(expresion, "&&") != NULL ||
-           strstr(expresion, "||") != NULL ||
-           strchr(expresion, ':') != NULL){
-            printf("Instruccion no soportada: %s", linea);
-            errores++;
+        // Operadores logicos: && (AND) y || (OR)
+        simbolo = strstr(expresion, "&&");
+        if(simbolo == NULL)
+            simbolo = strstr(expresion, "||");
+
+        if(simbolo != NULL){
+            operador = *simbolo;
+            strcpy(derecha, simbolo + 2);
+            *simbolo = '\0';
+            strcpy(izquierda, expresion);
+            operando(op1, izquierda);
+            operando(op2, derecha);
+
+            if(operador == '&'){
+                // AND: ambos valores deben ser diferentes de cero
+                fprintf(salida, "    mov eax, %s\n", op1);
+                fprintf(salida, "    cmp eax, 0\n");
+                fprintf(salida, "    je log%d_falso\n", numeroLogico);
+                fprintf(salida, "    mov eax, %s\n", op2);
+                fprintf(salida, "    cmp eax, 0\n");
+                fprintf(salida, "    je log%d_falso\n", numeroLogico);
+                fprintf(salida, "    mov eax, 1\n");
+                fprintf(salida, "    jmp log%d_fin\n", numeroLogico);
+                fprintf(salida, "log%d_falso:\n", numeroLogico);
+                fprintf(salida, "    mov eax, 0\n");
+            }
+            else{
+                // OR: basta con que uno sea diferente de cero
+                fprintf(salida, "    mov eax, %s\n", op1);
+                fprintf(salida, "    cmp eax, 0\n");
+                fprintf(salida, "    jne log%d_verdadero\n", numeroLogico);
+                fprintf(salida, "    mov eax, %s\n", op2);
+                fprintf(salida, "    cmp eax, 0\n");
+                fprintf(salida, "    jne log%d_verdadero\n", numeroLogico);
+                fprintf(salida, "    mov eax, 0\n");
+                fprintf(salida, "    jmp log%d_fin\n", numeroLogico);
+                fprintf(salida, "log%d_verdadero:\n", numeroLogico);
+                fprintf(salida, "    mov eax, 1\n");
+            }
+            fprintf(salida, "log%d_fin:\n", numeroLogico);
+            fprintf(salida, "    mov [%s], eax\n",
+                    destino[0] == '$' ? destino + 1 : destino);
+            numeroLogico++;
+            continue;
+        }
+
+        // Potencia: base:exponente, usando multiplicaciones repetidas
+        simbolo = strchr(expresion, ':');
+        if(simbolo != NULL){
+            strcpy(derecha, simbolo + 1);
+            *simbolo = '\0';
+            strcpy(izquierda, expresion);
+            operando(op1, izquierda);
+            operando(op2, derecha);
+
+            fprintf(salida, "    mov ebx, %s\n", op1);
+            fprintf(salida, "    mov ecx, %s\n", op2);
+            fprintf(salida, "    mov eax, 1\n");
+            // Para exponentes negativos el resultado entero sera cero
+            fprintf(salida, "    cmp ecx, 0\n");
+            fprintf(salida, "    jl pot%d_negativo\n", numeroPotencia);
+            fprintf(salida, "pot%d_inicio:\n", numeroPotencia);
+            fprintf(salida, "    cmp ecx, 0\n");
+            fprintf(salida, "    je pot%d_fin\n", numeroPotencia);
+            fprintf(salida, "    imul eax, ebx\n");
+            fprintf(salida, "    dec ecx\n");
+            fprintf(salida, "    jmp pot%d_inicio\n", numeroPotencia);
+            fprintf(salida, "pot%d_negativo:\n", numeroPotencia);
+            fprintf(salida, "    mov eax, 0\n");
+            fprintf(salida, "pot%d_fin:\n", numeroPotencia);
+            fprintf(salida, "    mov [%s], eax\n",
+                    destino[0] == '$' ? destino + 1 : destino);
+            numeroPotencia++;
             continue;
         }
 
@@ -260,6 +384,88 @@ int main(){
     fprintf(salida, "\n    mov eax, 1\n");
     fprintf(salida, "    xor ebx, ebx\n");
     fprintf(salida, "    int 0x80\n");
+
+    // Rutina para imprimir el numero de EAX y un salto de linea
+    fprintf(salida, "\nimprimir:\n");
+    fprintf(salida, "    mov edi, buffer+15\n");
+    fprintf(salida, "    mov byte [edi], 10\n");
+    fprintf(salida, "    mov esi, buffer+16\n");
+    fprintf(salida, "    mov ebx, 10\n");
+    fprintf(salida, "    mov ebp, 0\n");
+    fprintf(salida, "    cmp eax, 0\n");
+    fprintf(salida, "    jge imprimir_digitos\n");
+    fprintf(salida, "    mov ebp, 1\n");
+    fprintf(salida, "imprimir_digitos:\n");
+    fprintf(salida, "    cdq\n");
+    fprintf(salida, "    idiv ebx\n");
+    fprintf(salida, "    cmp edx, 0\n");
+    fprintf(salida, "    jge imprimir_positivo\n");
+    fprintf(salida, "    neg edx\n");
+    fprintf(salida, "imprimir_positivo:\n");
+    fprintf(salida, "    add dl, '0'\n");
+    fprintf(salida, "    dec edi\n");
+    fprintf(salida, "    mov [edi], dl\n");
+    fprintf(salida, "    cmp eax, 0\n");
+    fprintf(salida, "    jne imprimir_digitos\n");
+    fprintf(salida, "    cmp ebp, 0\n");
+    fprintf(salida, "    je imprimir_mostrar\n");
+    fprintf(salida, "    dec edi\n");
+    fprintf(salida, "    mov byte [edi], '-'\n");
+    fprintf(salida, "imprimir_mostrar:\n");
+    fprintf(salida, "    mov eax, 4\n");
+    fprintf(salida, "    mov ebx, 1\n");
+    fprintf(salida, "    mov ecx, edi\n");
+    fprintf(salida, "    mov edx, esi\n");
+    fprintf(salida, "    sub edx, edi\n");
+    fprintf(salida, "    int 0x80\n");
+    fprintf(salida, "    ret\n");
+
+    // Rutina para leer un entero desde teclado (positivo o negativo)
+    // Devuelve el numero en EAX. La entrada termina con Enter.
+    fprintf(salida, "\nleer:\n");
+    fprintf(salida, "    mov esi, 0\n");
+    fprintf(salida, "    mov edi, 1\n");
+    fprintf(salida, "leer_caracter:\n");
+    fprintf(salida, "    mov eax, 3\n");
+    fprintf(salida, "    mov ebx, 0\n");
+    fprintf(salida, "    mov ecx, entrada_char\n");
+    fprintf(salida, "    mov edx, 1\n");
+    fprintf(salida, "    int 0x80\n");
+    fprintf(salida, "    cmp eax, 0\n");
+    fprintf(salida, "    jle leer_fin\n");
+    fprintf(salida, "    mov al, [entrada_char]\n");
+    fprintf(salida, "    cmp al, 10\n");
+    fprintf(salida, "    je leer_fin\n");
+    fprintf(salida, "    cmp al, 13\n");
+    fprintf(salida, "    je leer_fin\n");
+    fprintf(salida, "    cmp al, '-'\n");
+    fprintf(salida, "    jne leer_digito\n");
+    fprintf(salida, "    mov edi, -1\n");
+    fprintf(salida, "    jmp leer_caracter\n");
+    fprintf(salida, "leer_digito:\n");
+    fprintf(salida, "    cmp al, '0'\n");
+    fprintf(salida, "    jl leer_caracter\n");
+    fprintf(salida, "    cmp al, '9'\n");
+    fprintf(salida, "    jg leer_caracter\n");
+    fprintf(salida, "    sub al, '0'\n");
+    fprintf(salida, "    movzx eax, al\n");
+    fprintf(salida, "    imul esi, esi, 10\n");
+    fprintf(salida, "    add esi, eax\n");
+    fprintf(salida, "    jmp leer_caracter\n");
+    fprintf(salida, "leer_fin:\n");
+    fprintf(salida, "    mov eax, esi\n");
+    fprintf(salida, "    imul eax, edi\n");
+    fprintf(salida, "    ret\n");
+
+    if(lecturasPendientes > 0){
+        printf("Hay instrucciones READ incompletas\n");
+        errores++;
+    }
+
+    if(escriturasPendientes > 0){
+        printf("Hay instrucciones WRITE incompletas\n");
+        errores++;
+    }
 
     fclose(entrada);
     fclose(salida);
