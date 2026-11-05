@@ -2,7 +2,7 @@ section .bss
     a resd 1
     b resd 1
     t1 resd 1
-    suma resd 1
+    resultado resd 1
     buffer resb 16
     entrada_char resb 1
 
@@ -22,8 +22,8 @@ _start:
     add eax, [b]
     mov [t1], eax
     mov eax, [t1]
-    mov [suma], eax
-    mov eax, [suma]
+    mov [resultado], eax
+    mov eax, [resultado]
     push eax
     pop eax
     call imprimir

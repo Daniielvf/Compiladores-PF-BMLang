@@ -1,0 +1,23 @@
+MAIN{
+    DEC $a,$b,$resultado,$i;
+
+    READ $a;
+    READ $b;
+
+    $resultado=>$a+$b;
+
+    IF($a>0 && $b>0){
+        $resultado=>$resultado+10;
+    }ELSE{
+        $resultado=>0;
+    }
+
+    $i=>0;
+
+    WHILE($i<3){
+        $resultado=>$resultado+1;
+        $i=>$i+1;
+    }
+
+    WRITE $resultado;
+}

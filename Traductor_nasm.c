@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
+    
 char variables[200][50];
 int cantidad = 0;
 

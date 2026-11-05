@@ -1,0 +1,12 @@
+MAIN{
+    DEC $a,$resultado,$i;
+
+    $a=>2;
+    $resultado=>$a:3;
+
+    FOR($i=>0;$i<3;$i=>$i+1){
+        $resultado=>$resultado+2;
+    }
+
+    WRITE $resultado;
+}
