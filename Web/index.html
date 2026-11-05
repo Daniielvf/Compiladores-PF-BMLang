@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- configuracion de la pagina -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMLANG VARIANTE A</title>
+  <link rel="stylesheet" href="estilos.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- logo y titulo del proyecto -->
+  <header class="encabezado">
+    <img src="logo.png" alt="Universidad Mesoamericana">
+    <h1>BMLANG VARIANTE A</h1>
+    <p>Proyecto de Compiladores</p>
+  </header>
+
+  <main>
+    <!-- editor y traduccion -->
+    <section class="area-traduccion" aria-label="Editor y traducción">
+      <section class="panel">
+        <header class="cabecera-panel"><h2>Código fuente</h2></header>
+        <nav class="herramientas" aria-label="Archivos">
+          <button id="nuevo">Nuevo</button>
+          <button id="abrir">Abrir</button>
+          <button id="guardar">Guardar</button>
+          <input id="archivo" type="file" accept=".bml" hidden>
+        </nav>
+        <label class="nombre-archivo" for="nombre">Nombre del archivo</label>
+        <input id="nombre" value="programa.bml" aria-label="Nombre del archivo">
+        <label class="etiqueta-editor" for="editor">Programa BMLang</label>
+        <textarea id="editor" spellcheck="false"></textarea>
+      </section>
+
+      <section class="panel">
+        <header class="cabecera-panel"><h2>Traducción</h2></header>
+        <nav class="herramientas" aria-label="Generar código">
+          <button id="intermedio">Generar intermedio</button>
+          <button id="nasm">Generar NASM</button>
+        </nav>
+        <p class="nota">Resultado generado por el compilador</p>
+        <pre id="resultado" tabindex="0" aria-label="Código generado"></pre>
+      </section>
+    </section>
+
+    <!-- mensajes y ejecucion -->
+    <section class="consola">
+      <header class="cabecera-consola">
+        <h2>Consola</h2>
+        <nav aria-label="Ejecución">
+          <button id="compilar">Crear ejecutable</button>
+          <button id="ejecutar">Ejecutar</button>
+        </nav>
+      </header>
+      <section class="contenido-consola">
+        <section aria-label="Mensajes del compilador">
+          <p id="estado" role="status">Listo para editar</p>
+          <pre id="salida" tabindex="0"></pre>
+        </section>
+        <label for="entrada">Entrada para READ
+          <textarea id="entrada" placeholder="Un dato por línea"></textarea>
+          <small>Disponible al implementar la ejecución</small>
+        </label>
+      </section>
+    </section>
+
+    <!-- integrantes visibles -->
+    <section class="integrantes-visibles" aria-labelledby="titulo-integrantes">
+      <h2 id="titulo-integrantes">Integrantes del proyecto</h2>
+      <ul>
+        <li>
+          <strong>Wilberth Daniel Velasquez Flores</strong>
+          <span>Carné: 202408061</span>
+        </li>
+        <li>
+          <strong>Claudia Estefania Zorin Tajiboy</strong>
+          <span>Carné: 202408031</span>
+        </li>
+      </ul>
+      <button id="integrantes">Ver integrantes</button>
+    </section>
+  </main>
+
+  <!-- ventana de integrantes -->
+  <dialog id="equipo" aria-labelledby="titulo-equipo">
+    <h2 id="titulo-equipo">Integrantes</h2>
+    <p>Wilberth Daniel Velasquez Flores<br><strong>202408061</strong></p>
+    <p>Claudia Estefania Zorin Tajiboy<br><strong>202408031</strong></p>
+    <form method="dialog"><button>Cerrar</button></form>
+  </dialog>
+
+  <footer>Universidad Mesoamericana · Proyecto de Compiladores · 2026</footer>
+</body>
+</html>
