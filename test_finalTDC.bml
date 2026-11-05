@@ -1,0 +1,25 @@
+MAIN{
+    DEC $x,$y,$i,$total;
+
+    $x=>10;
+    $y=>20;
+    $total=>0;
+
+    IF($x<$y){
+        $total=>$x+$y;
+    }ELSE{
+        $total=>0;
+    }
+
+    WHILE($x<15){
+        $x=>$x+1;
+    }
+
+    FOR($i=>0;$i<5;$i=>$i+1){
+        $total=>$total+$i;
+    }
+
+    IF($x>5 && $y<30){
+        WRITE $total;
+    }
+}

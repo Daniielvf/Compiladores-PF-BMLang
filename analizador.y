@@ -26,13 +26,19 @@ void nuevaEtiqueta(char *etiqueta);
 %token AND OR
 
 %type <cadena> expresion termino potencia factor comparacion operador_relacional
+%type <cadena> condicion condicion_or condicion_or_prima
+%type <cadena> condicion_and condicion_and_prima
 
 %%
 
 // reglas gramaticales
 
 programa:
-    MAIN bloque
+    MAIN
+    {
+        printf("main:\n");
+    }
+    bloque
     ;
 
 bloque:
@@ -173,7 +179,21 @@ factor:
 // condicionales
 
 if_sentencia:
-    IF PAR_IZQ condicion PAR_DER bloque sino
+    IF PAR_IZQ condicion PAR_DER
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("ifZ %s goto %s\n", $3, $<cadena>$);
+    }
+    bloque
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("goto %s\n", $<cadena>$);
+        printf("%s:\n", $<cadena>5);
+    }
+    sino
+    {
+        printf("%s:\n", $<cadena>7);
+    }
     ;
 
 sino:
@@ -185,35 +205,121 @@ sino:
 // ciclos
 
 while_sentencia:
-    WHILE PAR_IZQ condicion PAR_DER bloque
+    WHILE
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("%s:\n", $<cadena>$);
+    }
+    PAR_IZQ condicion PAR_DER
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("ifZ %s goto %s\n", $4, $<cadena>$);
+    }
+    bloque
+    {
+        printf("goto %s\n", $<cadena>2);
+        printf("%s:\n", $<cadena>6);
+    }
     ;
 
 for_sentencia:
-    FOR PAR_IZQ asignacion PUNTOYCOMA condicion PUNTOYCOMA asignacion PAR_DER bloque
+    FOR PAR_IZQ asignacion PUNTOYCOMA
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("%s:\n", $<cadena>$);
+    }
+    condicion PUNTOYCOMA
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("ifZ %s goto %s\n", $6, $<cadena>$);
+    }
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("goto %s\n", $<cadena>$);
+    }
+    {
+        nuevaEtiqueta($<cadena>$);
+        printf("%s:\n", $<cadena>$);
+    }
+    asignacion PAR_DER
+    {
+        printf("goto %s\n", $<cadena>5);
+        printf("%s:\n", $<cadena>9);
+    }
+    bloque
+    {
+        printf("goto %s\n", $<cadena>10);
+        printf("%s:\n", $<cadena>8);
+    }
     ;
 
 // condiciones
 
 condicion:
     condicion_or
+    {
+        strcpy($$, $1);
+    }
     ;
 
 condicion_or:
     condicion_and condicion_or_prima
+    {
+        if($2[0]){
+            nuevaTemp($$);
+            printf("%s=%s||%s\n", $$, $1, $2);
+        }
+        else{
+            strcpy($$, $1);
+        }
+    }
     ;
 
 condicion_or_prima:
     OR condicion_and condicion_or_prima
+    {
+        if($3[0]){
+            nuevaTemp($$);
+            printf("%s=%s||%s\n", $$, $2, $3);
+        }
+        else{
+            strcpy($$, $2);
+        }
+    }
     |
+    {
+        $$[0] = '\0';
+    }
     ;
 
 condicion_and:
     comparacion condicion_and_prima
+    {
+        if($2[0]){
+            nuevaTemp($$);
+            printf("%s=%s&&%s\n", $$, $1, $2);
+        }
+        else{
+            strcpy($$, $1);
+        }
+    }
     ;
 
 condicion_and_prima:
     AND comparacion condicion_and_prima
+    {
+        if($3[0]){
+            nuevaTemp($$);
+            printf("%s=%s&&%s\n", $$, $2, $3);
+        }
+        else{
+            strcpy($$, $2);
+        }
+    }
     |
+    {
+        $$[0] = '\0';
+    }
     ;
 
 comparacion:
