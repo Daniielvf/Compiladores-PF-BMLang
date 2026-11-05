@@ -2,3 +2,10 @@ analizador
 analizador.tab.c
 analizador.tab.h
 lex.yy.c
+# Ejecutables y archivos compilados
+*.o
+programa
+traductor_nasm
+
+# Codigo intermedio generado
+codigo_intermedio.txt
