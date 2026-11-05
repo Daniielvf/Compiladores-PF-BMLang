@@ -82,3 +82,11 @@ for (const accion of ["intermedio", "nasm", "compilar", "ejecutar"]) {
 }
 buscar("integrantes").onclick = () => buscar("equipo").showModal();
 editor.oninput = limpiar;
+
+function mostrarIntegrantes() {
+    document.getElementById("ventanaIntegrantes").style.display = "block";
+}
+
+function cerrarIntegrantes() {
+    document.getElementById("ventanaIntegrantes").style.display = "none";
+}

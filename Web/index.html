@@ -14,8 +14,26 @@
     <img src="logo.png" alt="Universidad Mesoamericana">
     <h1>BMLANG VARIANTE A</h1>
     <p>Proyecto de Compiladores</p>
+    <button class="btn-integrantes" onclick="mostrarIntegrantes()">
+    Integrantes
+  </button>
   </header>
 
+  <!-- Ventana emergente de integrantes -->
+  <div id="ventanaIntegrantes" class="modal">
+    <div class="modal-contenido">
+
+        <span class="cerrar" onclick="cerrarIntegrantes()">&times;</span>
+
+        <h2>Integrantes del Proyecto</h2>
+        <h3>Compilador BMLang</h3>
+
+        <p>Wilberth Daniel Velasquez Flores - Carné: 202408061</p>
+        <p>Claudia Estefania Zorin Tajiboy - Carné: 202408031</p>
+
+    </div>
+  </div>
+  
   <main>
     <!-- editor y traduccion -->
     <section class="area-traduccion" aria-label="Editor y traducción">
@@ -64,31 +82,7 @@
         </label>
       </section>
     </section>
-
-    <!-- integrantes visibles -->
-    <section class="integrantes-visibles" aria-labelledby="titulo-integrantes">
-      <h2 id="titulo-integrantes">Integrantes del proyecto</h2>
-      <ul>
-        <li>
-          <strong>Wilberth Daniel Velasquez Flores</strong>
-          <span>Carné: 202408061</span>
-        </li>
-        <li>
-          <strong>Claudia Estefania Zorin Tajiboy</strong>
-          <span>Carné: 202408031</span>
-        </li>
-      </ul>
-      <button id="integrantes">Ver integrantes</button>
-    </section>
   </main>
-
-  <!-- ventana de integrantes -->
-  <dialog id="equipo" aria-labelledby="titulo-equipo">
-    <h2 id="titulo-equipo">Integrantes</h2>
-    <p>Wilberth Daniel Velasquez Flores<br><strong>202408061</strong></p>
-    <p>Claudia Estefania Zorin Tajiboy<br><strong>202408031</strong></p>
-    <form method="dialog"><button>Cerrar</button></form>
-  </dialog>
 
   <footer>Universidad Mesoamericana · Proyecto de Compiladores · 2026</footer>
 </body>
