@@ -6,9 +6,8 @@
 void yyerror(char *mensaje);
 int yylex();
 void nuevaTemp(char *temporal);
+void nuevaEtiqueta(char *etiqueta);
 
-extern int yylineno;
-extern char *yytext;
 %}
 
 %union{
@@ -26,7 +25,7 @@ extern char *yytext;
 %token MENOR MAYOR MAYOR_IGUAL MENOR_IGUAL IGUAL DIFERENTE
 %token AND OR
 
-%type <cadena> expresion termino potencia factor
+%type <cadena> expresion termino potencia factor comparacion operador_relacional
 
 %%
 
@@ -219,15 +218,37 @@ condicion_and_prima:
 
 comparacion:
     expresion operador_relacional expresion
+    {
+        nuevaTemp($$);
+        printf("%s=%s%s%s\n", $$, $1, $2, $3);
+    }
     ;
 
 operador_relacional:
     MENOR
+    {
+        strcpy($$, "<");
+    }
     | MAYOR
+    {
+        strcpy($$, ">");
+    }
     | MAYOR_IGUAL
+    {
+        strcpy($$, ">=");
+    }
     | MENOR_IGUAL
+    {
+        strcpy($$, "<=");
+    }
     | IGUAL
+    {
+        strcpy($$, "==");
+    }
     | DIFERENTE
+    {
+        strcpy($$, "<>");
+    }
     ;
 
 %%
@@ -239,17 +260,22 @@ void nuevaTemp(char *temporal){
     sprintf(temporal,"t%d",actual++);
 }
 
-void yyerror(char *mensaje)
-{
-    printf("Error sintactico en la linea %d: %s cerca de '%s'\n",
-           yylineno, mensaje, yytext);
+void nuevaEtiqueta(char *etiqueta){
+    static int actual=1;
+    sprintf(etiqueta,"l%d",actual++);
 }
 
-int main()
-{
-    if (yyparse() == 0){
+void yyerror(char *mensaje){
+    extern int yylineno;
+    extern char *yytext;
+
+    fprintf(stderr, "Error de sintaxis en la linea %d: %s, cerca de %s\n",
+            yylineno, mensaje, yytext);
+}
+
+int main(){
+    if(yyparse() == 0){
         printf("Analisis sintactico correcto\n");
     }
-
     return 0;
 }
