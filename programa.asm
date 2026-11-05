@@ -1,8 +1,10 @@
 section .bss
     a resd 1
-    b resd 1
+    i resd 1
     t1 resd 1
-    resultado resd 1
+    t2 resd 1
+    t3 resd 1
+    total resd 1
     buffer resb 16
     entrada_char resb 1
 
@@ -10,20 +12,39 @@ section .text
     global _start
 
 _start:
-    call leer
-    push eax
-    pop eax
+    mov eax, 0
     mov [a], eax
-    call leer
-    push eax
-    pop eax
-    mov [b], eax
-    mov eax, [a]
-    add eax, [b]
+    mov eax, 1
+    mov [i], eax
+l1:
+    mov eax, [i]
+    mov ebx, 2
+    cmp eax, ebx
+    jle comp1_true
+    mov eax, 0
+    jmp comp1_fin
+comp1_true:
+    mov eax, 1
+comp1_fin:
     mov [t1], eax
     mov eax, [t1]
-    mov [resultado], eax
-    mov eax, [resultado]
+    cmp eax, 0
+    je l2
+    mov eax, [a]
+    add eax, 2
+    mov [t2], eax
+    mov eax, [t2]
+    mov [a], eax
+    mov eax, [i]
+    add eax, 1
+    mov [t3], eax
+    mov eax, [t3]
+    mov [i], eax
+    jmp l1
+l2:
+    mov eax, [a]
+    mov [total], eax
+    mov eax, [total]
     push eax
     pop eax
     call imprimir

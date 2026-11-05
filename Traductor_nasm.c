@@ -1,20 +1,24 @@
-
+// Librerias usadas para el manejo de archivos
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
     
+// Variables
 char variables[200][50];
 int cantidad = 0;
 
+// Registro de variables
 void registrar(char *nombre){
     char limpio[50];
     int i;
 
+    // Eliminar el signo $
     if(nombre[0] == '$')
         strcpy(limpio, nombre + 1);
     else
         strcpy(limpio, nombre);
 
+    // Evitar variables repetidas
     for(i = 0; i < cantidad; i++){
         if(strcmp(variables[i], limpio) == 0)
             return;
@@ -26,10 +30,12 @@ void registrar(char *nombre){
     }
 }
 
+// Busqueda de variables y temporales
 void buscarVariables(char *linea){
     int i = 0, j;
     char nombre[50];
 
+    // Lectura de la linea
     while(linea[i] != '\0'){
         if(linea[i] == '$' ||
            (linea[i] == 't' && isdigit((unsigned char)linea[i+1]) &&
@@ -40,6 +46,7 @@ void buscarVariables(char *linea){
             if(linea[i] == '$')
                 i++;
 
+            // Nombre de la variable
             while(isalnum((unsigned char)linea[i]) && j < 49){
                 nombre[j++] = linea[i++];
             }
@@ -54,6 +61,7 @@ void buscarVariables(char *linea){
     }
 }
 
+// Operandos para NASM
 void operando(char *resultado, char *valor){
     if(valor[0] == '$'){
         sprintf(resultado, "[%s]", valor + 1);
@@ -66,7 +74,9 @@ void operando(char *resultado, char *valor){
     }
 }
 
+// Traduccion a NASM
 int main(){
+    // Variables
     FILE *entrada;
     FILE *salida;
     char linea[256];
@@ -76,6 +86,7 @@ int main(){
     char etiqueta[50], valor[50];
     char *simbolo;
     char salto[8];
+    // Contadores
     int i, errores = 0, numeroComparacion = 1;
     int numeroLogico = 1, numeroPotencia = 1;
     int tamOperador;
@@ -83,18 +94,21 @@ int main(){
     int lecturasPendientes = 0;
     char operador;
 
+    // Abrir codigo intermedio
     entrada = fopen("codigo_intermedio.txt", "r");
     if(entrada == NULL){
         printf("No se encontro codigo_intermedio.txt\n");
         return 1;
     }
 
-    // Primera lectura: registrar variables y temporales
+    // Registrar variables y temporales
     while(fgets(linea, sizeof(linea), entrada)){
         buscarVariables(linea);
     }
+    // Volver al inicio del archivo
     rewind(entrada);
 
+    // Crear archivo NASM
     salida = fopen("programa.asm", "w");
     if(salida == NULL){
         fclose(entrada);
@@ -102,27 +116,31 @@ int main(){
         return 1;
     }
 
+    // Reserva de memoria
     fprintf(salida, "section .bss\n");
     for(i = 0; i < cantidad; i++){
         fprintf(salida, "    %s resd 1\n", variables[i]);
     }
 
+    // Espacio para READ y WRITE
     fprintf(salida, "    buffer resb 16\n");
     fprintf(salida, "    entrada_char resb 1\n");
 
+    // Seccion de instrucciones
     fprintf(salida, "\nsection .text\n");
     fprintf(salida, "    global _start\n\n");
     fprintf(salida, "_start:\n");
 
+    // Traduccion de instrucciones
     while(fgets(linea, sizeof(linea), entrada)){
-        // Ignorar encabezado, mensaje final y lineas vacias
+        // Ignorar lineas innecesarias
         if(strncmp(linea, "main:", 5) == 0 ||
            strncmp(linea, "Analisis sintactico correcto", 28) == 0 ||
            linea[0] == '\n'){
             continue;
         }
 
-        // READ: el codigo intermedio genera call input; y pop $a;
+        // READ
         if(strncmp(linea, "call input;", 11) == 0){
             fprintf(salida, "    call leer\n");
             fprintf(salida, "    push eax\n");
@@ -130,6 +148,7 @@ int main(){
             continue;
         }
 
+        // Guardar valor leido
         if(strncmp(linea, "pop ", 4) == 0){
             if(lecturasPendientes > 0 &&
                sscanf(linea, "pop %49[^;];", valor) == 1){
@@ -145,7 +164,8 @@ int main(){
             continue;
         }
 
-        // WRITE: el codigo intermedio genera push $a; y call output;
+        // WRITE
+        // Preparar valor de salida
         if(strncmp(linea, "push ", 5) == 0){
             if(sscanf(linea, "push %49[^;];", valor) == 1){
                 operando(op1, valor);
@@ -160,6 +180,7 @@ int main(){
             continue;
         }
 
+        // Mostrar valor
         if(strncmp(linea, "call output;", 12) == 0){
             if(escriturasPendientes > 0){
                 fprintf(salida, "    pop eax\n");
@@ -173,7 +194,7 @@ int main(){
             continue;
         }
 
-        // Saltar si el resultado de la condicion es cero
+        // Condicion ifZ
         if(strncmp(linea, "ifZ ", 4) == 0){
             if(sscanf(linea, "ifZ %49s goto %49s", valor, etiqueta) == 2){
                 operando(op1, valor);
@@ -188,7 +209,7 @@ int main(){
             continue;
         }
 
-        // Salto incondicional
+        // Salto goto
         if(strncmp(linea, "goto ", 5) == 0){
             if(sscanf(linea, "goto %49s", etiqueta) == 1)
                 fprintf(salida, "    jmp %s\n", etiqueta);
@@ -199,7 +220,7 @@ int main(){
             continue;
         }
 
-        // Etiquetas l1:, l2: ...
+        // Etiquetas
         if(sscanf(linea, " %49[^:]%*[: ]", etiqueta) == 1 &&
            etiqueta[0] == 'l' && isdigit((unsigned char)etiqueta[1]) &&
            strchr(linea, ':') != NULL && strchr(linea, '=') == NULL){
@@ -207,14 +228,14 @@ int main(){
             continue;
         }
 
-        // Instrucciones de asignacion: destino=expresion
+        // Asignaciones
         if(sscanf(linea, " %49[^=]=%99s", destino, expresion) != 2){
             printf("Instruccion no soportada: %s", linea);
             errores++;
             continue;
         }
 
-        // Buscar primero operadores relacionales de dos caracteres
+        // Comparaciones
         simbolo = NULL;
         tamOperador = 0;
         for(i = 1; expresion[i] != '\0'; i++){
@@ -238,6 +259,7 @@ int main(){
             }
         }
 
+        // Generar comparacion NASM
         if(simbolo != NULL){
             strcpy(derecha, simbolo + tamOperador);
             *simbolo = '\0';
@@ -260,7 +282,7 @@ int main(){
             continue;
         }
 
-        // Operadores logicos: && (AND) y || (OR)
+        // Operadores logicos
         simbolo = strstr(expresion, "&&");
         if(simbolo == NULL)
             simbolo = strstr(expresion, "||");
@@ -274,7 +296,7 @@ int main(){
             operando(op2, derecha);
 
             if(operador == '&'){
-                // AND: ambos valores deben ser diferentes de cero
+                // AND
                 fprintf(salida, "    mov eax, %s\n", op1);
                 fprintf(salida, "    cmp eax, 0\n");
                 fprintf(salida, "    je log%d_falso\n", numeroLogico);
@@ -287,7 +309,7 @@ int main(){
                 fprintf(salida, "    mov eax, 0\n");
             }
             else{
-                // OR: basta con que uno sea diferente de cero
+                // OR
                 fprintf(salida, "    mov eax, %s\n", op1);
                 fprintf(salida, "    cmp eax, 0\n");
                 fprintf(salida, "    jne log%d_verdadero\n", numeroLogico);
@@ -306,7 +328,7 @@ int main(){
             continue;
         }
 
-        // Potencia: base:exponente, usando multiplicaciones repetidas
+        // Potenciacion
         simbolo = strchr(expresion, ':');
         if(simbolo != NULL){
             strcpy(derecha, simbolo + 1);
@@ -315,10 +337,11 @@ int main(){
             operando(op1, izquierda);
             operando(op2, derecha);
 
+            // Multiplicaciones repetidas
             fprintf(salida, "    mov ebx, %s\n", op1);
             fprintf(salida, "    mov ecx, %s\n", op2);
             fprintf(salida, "    mov eax, 1\n");
-            // Para exponentes negativos el resultado entero sera cero
+            // Exponente negativo
             fprintf(salida, "    cmp ecx, 0\n");
             fprintf(salida, "    jl pot%d_negativo\n", numeroPotencia);
             fprintf(salida, "pot%d_inicio:\n", numeroPotencia);
@@ -336,7 +359,7 @@ int main(){
             continue;
         }
 
-        // Buscar los operadores aritmeticos
+        // Operaciones aritmeticas
         simbolo = NULL;
         for(i = 1; expresion[i] != '\0'; i++){
             if(expresion[i] == '+' || expresion[i] == '-' ||
@@ -346,6 +369,7 @@ int main(){
             }
         }
 
+        // Asignacion directa
         if(simbolo == NULL){
             operando(op1, expresion);
             fprintf(salida, "    mov eax, %s\n", op1);
@@ -360,6 +384,7 @@ int main(){
             operando(op1, izquierda);
             operando(op2, derecha);
 
+            // Suma, resta, multiplicacion y division
             fprintf(salida, "    mov eax, %s\n", op1);
             if(operador == '+'){
                 fprintf(salida, "    add eax, %s\n", op2);
@@ -381,11 +406,12 @@ int main(){
         }
     }
 
+    // Fin del programa
     fprintf(salida, "\n    mov eax, 1\n");
     fprintf(salida, "    xor ebx, ebx\n");
     fprintf(salida, "    int 0x80\n");
 
-    // Rutina para imprimir el numero de EAX y un salto de linea
+    // Rutina WRITE
     fprintf(salida, "\nimprimir:\n");
     fprintf(salida, "    mov edi, buffer+15\n");
     fprintf(salida, "    mov byte [edi], 10\n");
@@ -395,6 +421,7 @@ int main(){
     fprintf(salida, "    cmp eax, 0\n");
     fprintf(salida, "    jge imprimir_digitos\n");
     fprintf(salida, "    mov ebp, 1\n");
+    // Obtener digitos
     fprintf(salida, "imprimir_digitos:\n");
     fprintf(salida, "    cdq\n");
     fprintf(salida, "    idiv ebx\n");
@@ -411,6 +438,7 @@ int main(){
     fprintf(salida, "    je imprimir_mostrar\n");
     fprintf(salida, "    dec edi\n");
     fprintf(salida, "    mov byte [edi], '-'\n");
+    // Mostrar en pantalla
     fprintf(salida, "imprimir_mostrar:\n");
     fprintf(salida, "    mov eax, 4\n");
     fprintf(salida, "    mov ebx, 1\n");
@@ -420,11 +448,11 @@ int main(){
     fprintf(salida, "    int 0x80\n");
     fprintf(salida, "    ret\n");
 
-    // Rutina para leer un entero desde teclado (positivo o negativo)
-    // Devuelve el numero en EAX. La entrada termina con Enter.
+    // Rutina READ
     fprintf(salida, "\nleer:\n");
     fprintf(salida, "    mov esi, 0\n");
     fprintf(salida, "    mov edi, 1\n");
+    // Leer caracteres
     fprintf(salida, "leer_caracter:\n");
     fprintf(salida, "    mov eax, 3\n");
     fprintf(salida, "    mov ebx, 0\n");
@@ -442,6 +470,7 @@ int main(){
     fprintf(salida, "    jne leer_digito\n");
     fprintf(salida, "    mov edi, -1\n");
     fprintf(salida, "    jmp leer_caracter\n");
+    // Convertir a entero
     fprintf(salida, "leer_digito:\n");
     fprintf(salida, "    cmp al, '0'\n");
     fprintf(salida, "    jl leer_caracter\n");
@@ -457,6 +486,7 @@ int main(){
     fprintf(salida, "    imul eax, edi\n");
     fprintf(salida, "    ret\n");
 
+    // Verificar READ y WRITE
     if(lecturasPendientes > 0){
         printf("Hay instrucciones READ incompletas\n");
         errores++;
@@ -470,6 +500,7 @@ int main(){
     fclose(entrada);
     fclose(salida);
 
+    // Control de errores
     if(errores > 0){
         printf("Hay %d instrucciones pendientes de traducir\n", errores);
         remove("programa.asm");
